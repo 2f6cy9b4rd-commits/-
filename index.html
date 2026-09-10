@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍅 种番茄 · Pomodoro Study</title>
+<style>
+  :root{
+    --bg:#faf6f0;
+    --card:#ffffff;
+    --ink:#3d3a37;
+    --sub:#8a837c;
+    --tomato:#ff6b4a;
+    --tomato-soft:#ffe8e1;
+    --green:#4caf7d;
+    --green-soft:#e3f5eb;
+    --blue:#5b8def;
+    --blue-soft:#e8efff;
+    --amber:#f5a623;
+    --amber-soft:#fdf0d8;
+    --line:#efe8e0;
+    --radius:18px;
+    --shadow:0 4px 20px rgba(90,70,50,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg);color:var(--ink);min-height:100vh;
+    background-image:radial-gradient(#f0e6da 1px,transparent 1px);background-size:26px 26px;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:20px 16px 60px}
+
+  /* ===== header ===== */
+  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+  .logo{font-size:26px;font-weight:800;display:flex;align-items:center;gap:10px}
+  .logo .tag{font-size:11px;font-weight:600;color:var(--tomato);background:var(--tomato-soft);
+    padding:3px 10px;border-radius:99px;transform:rotate(-3deg);display:inline-block}
+  .streak{font-size:13px;color:var(--sub);background:var(--card);border:1px solid var(--line);
+    padding:6px 14px;border-radius:99px;box-shadow:var(--shadow)}
+  .streak b{color:var(--tomato)}
+
+  /* ===== tabs ===== */
+  nav{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+  .tab-btn{
+    border:1px solid var(--line);background:var(--card);color:var(--sub);
+    padding:10px 20px;border-radius:99px;font-size:15px;font-weight:600;cursor:pointer;
+    transition:all .2s;box-shadow:var(--shadow);font-family:inherit
+  }
+  .tab-btn:hover{transform:translateY(-2px)}
+  .tab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .tab-btn .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+  .page{display:none;animation:fadeIn .25s ease}
+  .page.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line);padding:24px}
+
+  /* ===== pomodoro ===== */
+  .pomo-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
+  @media(max-width:760px){.pomo-grid{grid-template-columns:1fr}}
+  .timer-ring{position:relative;width:260px;height:260px;margin:14px auto}
+  .timer-ring svg{transform:rotate(-90deg)}
+  .timer-ring .time{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .timer-ring .time .num{font-size:52px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:1px}
+  .timer-ring .time .lbl{font-size:13px;color:var(--sub);margin-top:4px}
+  .pomo-ctrl{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+  .btn{border:none;border-radius:12px;padding:12px 26px;font-size:15px;font-weight:700;cursor:pointer;
+    font-family:inherit;transition:all .15s}
+  .btn:active{transform:scale(.95)}
+  .btn-main{background:var(--tomato);color:#fff}
+  .btn-main.break-mode{background:var(--green)}
+  .btn-ghost{background:transparent;color:var(--sub);border:1px solid var(--line)}
+  .mode-row{display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+  .mode-chip{padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;
+    border:1px solid var(--line);color:var(--sub);background:var(--card);transition:all .15s;font-family:inherit}
+  .mode-chip.active{background:var(--tomato-soft);color:var(--tomato);border-color:var(--tomato)}
+  .mode-chip.active.break{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+  .pomo-stats{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  .stat-pill{flex:1;min-width:90px;background:var(--bg);border-radius:14px;padding:12px;text-align:center}
+  .stat-pill .v{font-size:24px;font-weight:800}
+  .stat-pill .k{font-size:12px;color:var(--sub)}
+  .quote{margin-top:16px;padding:14px 16px;background:var(--amber-soft);border-radius:14px;
+    font-size:14px;color:#8a6a1f;line-height:1.7}
+  .settings-row{display:flex;gap:14px;align-items:center;margin-top:14px;font-size:13px;color:var(--sub);flex-wrap:wrap;justify-content:center}
+  .settings-row label{display:flex;align-items:center;gap:5px}
+  .settings-row input{width:58px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;
+    font-size:13px;text-align:center;font-family:inherit}
+  .history{font-size:13px;color:var(--sub);margin-top:14px;line-height:2}
+  .history b{color:var(--ink)}
+
+  /* ===== games ===== */
+  .game-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+  .game-card h3{margin-bottom:6px;font-size:17px}
+  .game-card p{font-size:13px;color:var(--sub);margin-bottom:14px;line-height:1.6}
+  /* pet */
+  .pet-layout{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:760px){.pet-layout{grid-template-columns:1fr}}
+  .pet-stage{
+    background:linear-gradient(170deg,#fff6ec,#ffeede);border-radius:16px;padding:26px 16px;
+    text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px
+  }
+  .pet-emoji{font-size:84px;line-height:1;cursor:pointer;user-select:none;animation:bob 2.6s ease-in-out infinite}
+  .pet-emoji:active{transform:scale(1.18)}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .pet-name{margin-top:12px;font-weight:800;font-size:17px}
+  .pet-lv{font-size:12px;color:var(--amber);font-weight:700;margin-top:3px}
+  .pet-bars{width:100%;max-width:280px;margin-top:16px;display:flex;flex-direction:column;gap:8px}
+  .pbar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
+  .pbar .track{flex:1;height:9px;background:#fff;border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+  .pbar .track i{display:block;height:100%;border-radius:99px;transition:width .4s}
+  .pet-msg{margin-top:14px;font-size:13px;color:var(--sub);min-height:20px}
+  .wallet{display:inline-flex;align-items:center;gap:6px;background:var(--amber-soft);color:#8a6a1f;
+    font-weight:800;font-size:15px;padding:7px 16px;border-radius:99px;margin-bottom:14px}
+  .pet-shop h4{font-size:14px;margin-bottom:8px}
+  .shop-row{display:flex;gap:8px;flex-wrap:wrap}
+  .shop-btn{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 14px;font-size:13px;
+    cursor:pointer;font-family:inherit;font-weight:700;text-align:left;line-height:1.5;transition:border-color .15s}
+  .shop-btn small{display:block;color:var(--sub);font-weight:500}
+  .shop-btn:hover{border-color:var(--amber)}
+  .pet-tip{margin-top:14px;font-size:12px;color:var(--sub);line-height:1.8;background:var(--bg);border-radius:12px;padding:10px 12px}
+  /* proof upload */
+  .proof-form{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .proof-form textarea{flex:1;min-width:220px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+    font-family:inherit;font-size:13px;resize:vertical}
+  .proof-form input[type=number]{width:110px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+    font-family:inherit;font-size:13px;text-align:center}
+  .proof-thumb{width:74px;height:74px;object-fit:cover;border-radius:10px;border:1px dashed var(--line);cursor:pointer}
+  .proof-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .proof-item{width:76px;height:88px;position:relative;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid var(--line)}
+  .proof-item img{width:100%;height:76px;object-fit:cover;display:block}
+  .proof-item .m{background:var(--bg);font-size:10px;text-align:center;color:var(--sub);padding:3px 0;line-height:1.3}
+  .proof-view{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;flex-direction:column;
+    align-items:center;justify-content:center;z-index:98;cursor:zoom-out;padding:20px}
+  .proof-view.show{display:flex}
+  .proof-view img{max-width:92%;max-height:80vh;border-radius:12px}
+  .proof-view .note{color:#fff;font-size:14px;margin-top:12px;text-align:center}
+  /* memory match */
+  .mem-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+  .mem-card{
+    aspect-ratio:1;border-radius:10px;background:var(--blue-soft);display:flex;align-items:center;justify-content:center;
+    font-size:26px;cursor:pointer;transition:all .2s;border:2px solid transparent;user-select:none
+  }
+  .mem-card.open{background:#fff;border-color:var(--blue);transform:rotateY(0)}
+  .mem-card.done{background:var(--green-soft);border-color:var(--green);cursor:default;opacity:.75}
+  .game-status{display:flex;justify-content:space-between;font-size:13px;color:var(--sub);margin-top:12px}
+  /* zen clicker */
+  .zen-stage{position:relative;height:170px;border-radius:14px;overflow:hidden;background:linear-gradient(#fdf6ec,#faecd8);cursor:crosshair}
+  .zen-stage .leaf{position:absolute;font-size:22px;user-select:none;pointer-events:none;animation:drift linear forwards}
+  @keyframes drift{from{transform:translateY(-10px) rotate(0)}to{transform:translateY(180px) rotate(360deg)}}
+  .zen-score{position:absolute;right:10px;top:8px;font-size:12px;color:var(--amber);font-weight:700}
+
+  /* ===== words ===== */
+  .word-topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  .word-prog{flex:1;min-width:200px;height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+  .word-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#7dd4a3);border-radius:99px;transition:width .4s}
+  .word-btns-top{display:flex;gap:8px;flex-wrap:wrap}
+  .mini-btn{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 12px;font-size:12px;
+    color:var(--sub);cursor:pointer;font-family:inherit;font-weight:600}
+  .mini-btn:hover{border-color:var(--ink);color:var(--ink)}
+  .wcard{
+    background:linear-gradient(160deg,#fff,#fdf9f3);border-radius:var(--radius);border:1px solid var(--line);
+    box-shadow:var(--shadow);padding:34px 26px;text-align:center;position:relative;cursor:pointer;
+    min-height:300px;display:flex;flex-direction:column;justify-content:center;transition:transform .15s
+  }
+  .wcard:active{transform:scale(.98)}
+  .wcard .front .w{font-size:44px;font-weight:800;letter-spacing:.5px}
+  .wcard .front .ph{font-size:15px;color:var(--blue);margin-top:10px;font-style:italic}
+  .wcard .front .tap{margin-top:26px;font-size:12px;color:var(--sub)}
+  .wcard .back{display:none}
+  .wcard.flipped .back{display:block}
+  .wcard.flipped .front{display:none}
+  .wcard .back .w2{font-size:30px;font-weight:800}
+  .wcard .back .pos{display:inline-block;font-size:11px;color:var(--tomato);background:var(--tomato-soft);
+    padding:2px 10px;border-radius:99px;margin:10px 0 8px}
+  .wcard .back .mean{font-size:17px;line-height:1.7;color:var(--ink)}
+  .wcard .back .ex{margin-top:16px;font-size:14px;color:var(--sub);line-height:1.8;
+    background:var(--bg);border-radius:12px;padding:12px 14px}
+  .wcard .back .ex b{color:var(--ink)}
+  .wcard .idx{position:absolute;top:14px;left:16px;font-size:11px;color:var(--sub)}
+  .wcard .star{position:absolute;top:14px;right:16px;font-size:16px;cursor:pointer;opacity:.85}
+  .word-actions{display:flex;gap:12px;margin-top:18px}
+  .word-actions .btn{flex:1;font-size:16px;padding:14px}
+  .btn-no{background:var(--tomato-soft);color:var(--tomato)}
+  .btn-yes{background:var(--green-soft);color:var(--green)}
+  .word-empty{padding:40px;text-align:center;color:var(--sub)}
+  .word-empty .big{font-size:40px;margin-bottom:10px}
+  .word-list{margin-top:16px;font-size:13px;line-height:2.3;color:var(--sub);max-height:180px;overflow:auto}
+  .word-list b{color:var(--ink)}
+  .word-list .done{opacity:.45;text-decoration:line-through}
+
+  footer{margin-top:30px;text-align:center;font-size:12px;color:var(--sub)}
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(80px);
+    background:var(--ink);color:#fff;padding:10px 22px;border-radius:99px;font-size:14px;
+    opacity:0;transition:all .3s;z-index:99;pointer-events:none;white-space:nowrap
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">🍅 种番茄 <span class="tag">vibe coding</span></div>
+    <div class="streak">今日专注 <b id="todayCount">0</b> 🍅 · 连续打卡 <b id="streak">0</b> 天</div>
+  </header>
+
+  <nav>
+    <button class="tab-btn active" data-tab="pomo"><span class="dot" style="background:var(--tomato)"></span>番茄钟</button>
+    <button class="tab-btn" data-tab="game"><span class="dot" style="background:var(--blue)"></span>宠物 & 小游戏</button>
+    <button class="tab-btn" data-tab="word"><span class="dot" style="background:var(--green)"></span>背单词</button>
+  </nav>
+
+  <!-- ================= 番茄钟 ================= -->
+  <section class="page active" id="page-pomo">
+    <div class="pomo-grid">
+      <div class="card">
+        <div class="timer-ring">
+          <svg width="260" height="260">
+            <circle cx="130" cy="130" r="118" fill="none" stroke="var(--line)" stroke-width="10"/>
+            <circle id="ring" cx="130" cy="130" r="118" fill="none" stroke="var(--tomato)" stroke-width="10"
+              stroke-linecap="round" stroke-dasharray="741.4" stroke-dashoffset="0" style="transition:stroke .3s"/>
+          </svg>
+          <div class="time">
+            <div class="num" id="timeNum">25:00</div>
+            <div class="lbl" id="timeLbl">专注时间 · Ready?</div>
+          </div>
+        </div>
+        <div class="pomo-ctrl">
+          <button class="btn btn-main" id="btnStart">▶ 开始</button>
+          <button class="btn btn-ghost" id="btnReset">↺ 重置</button>
+          <button class="btn btn-ghost" id="btnSkip">⏭ 跳过</button>
+        </div>
+        <div class="mode-row">
+          <button class="mode-chip active" data-mode="focus">🍅 专注 25min</button>
+          <button class="mode-chip break" data-mode="short">☕ 小憩 5min</button>
+          <button class="mode-chip break" data-mode="long">🛋 长休 15min</button>
+        </div>
+        <div class="settings-row">
+          <label>专注 <input type="number" id="setFocus" min="1" max="120" value="25"> 分</label>
+          <label>小憩 <input type="number" id="setShort" min="1" max="60" value="5"> 分</label>
+          <label>长休 <input type="number" id="setLong" min="1" max="60" value="15"> 分</label>
+          <label><input type="checkbox" id="setAuto"> 自动开始下一段</label>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px">📊 今日战绩</h3>
+        <div class="pomo-stats">
+          <div class="stat-pill"><div class="v" id="statFocus">0</div><div class="k">完成专注</div></div>
+          <div class="stat-pill"><div class="v" id="statMin">0</div><div class="k">专注分钟</div></div>
+          <div class="stat-pill"><div class="v" id="statBreak">0</div><div class="k">休息次数</div></div>
+        </div>
+        <div class="quote" id="quoteBox">💧 专注就像呼吸，一呼一吸之间，事情就完成了。</div>
+        <div class="history" id="historyBox">最近 7 天：<b>暂无记录</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 小游戏 ================= -->
+  <section class="page" id="page-game">
+    <div class="game-grid">
+      <div class="card game-card" style="grid-column:1/-1">
+        <h3>🐣 学习宠物</h3>
+        <p>专注时长就是宠物的口粮：App 内每专注 1 分钟自动获得 1 枚 🪙 番茄币；线下学习可上传凭证兑换（每日有上限，防止挂机刷时间）。宠物饿了会掉状态，只有真的学习才能养活它。</p>
+        <div class="pet-layout">
+          <div class="pet-stage">
+            <div class="pet-emoji" id="petEmoji" title="点我互动">🥚</div>
+            <div class="pet-name" id="petName">小番茄</div>
+            <div class="pet-lv" id="petLv">Lv.1 · 经验 0/30</div>
+            <div class="pet-bars">
+              <div class="pbar">🍖<div class="track"><i id="petHungerBar" style="background:var(--tomato);width:80%"></i></div><span id="petHungerT">80</span></div>
+              <div class="pbar">💛<div class="track"><i id="petMoodBar" style="background:var(--amber);width:80%"></i></div><span id="petMoodT">80</span></div>
+            </div>
+            <div class="pet-msg" id="petMsg"></div>
+          </div>
+          <div class="pet-shop">
+            <div class="wallet">🪙 <span id="coinNum">0</span> 番茄币</div>
+            <h4>🛒 商店</h4>
+            <div class="shop-row">
+              <button class="shop-btn" id="btnFeed">🍖 普通粮食<small>5 币 · 饱食 +30，经验 +12</small></button>
+              <button class="shop-btn" id="btnSnack">🍬 宠物零食<small>12 币 · 心情 +30，经验 +5</small></button>
+              <button class="shop-btn" id="btnPet">🤚 摸摸它<small>免费 · 心情 +2（有冷却）</small></button>
+            </div>
+            <div class="pet-tip">
+              💡 投喂会积攒经验，攒够了升级进化：🥚 → 🐣 → 🐥 → 🐤 → 🐔<br>
+              饱食和心情会随时间慢慢下降，宠物饿了会不开心；<b>挂机不学习是喂不饱它的。</b><br>
+              番茄币来源：① 番茄钟专注（每分钟 1 币）② 下方凭证兑换。
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card game-card" style="grid-column:1/-1">
+        <h3>📸 学习凭证（线下学习兑换）</h3>
+        <p>线下学习（看书 / 刷题 / 上网课）也能赚币：拍一张学习笔记、教材或屏幕的照片 + 一句话描述，按实际学习分钟数兑换番茄币。每日最多兑换 240 分钟，凭证全部留档可回看——糊弄宠物，宠物是会知道的。</p>
+        <div class="proof-form">
+          <img id="proofThumb" class="proof-thumb" src="" alt="凭证预览" style="display:none">
+          <input type="file" id="proofFile" accept="image/*" hidden>
+          <button class="mini-btn" id="btnProofPick">📷 选择照片（必填）</button>
+          <textarea id="proofNote" rows="2" placeholder="学了什么？一句话描述（必填）"></textarea>
+          <input type="number" id="proofMin" min="1" max="240" placeholder="学习分钟数">
+          <button class="btn btn-main" id="btnProofSubmit">✅ 提交兑换</button>
+        </div>
+        <div class="game-status"><span>今日已兑换：<b id="proofToday">0</b> / 240 分钟</span><span>🪙 汇率 1 分钟 = 1 币</span></div>
+        <div class="proof-list" id="proofList"></div>
+      </div>
+      <div class="card game-card">
+        <h3>🧠 记忆翻牌</h3>
+        <p>翻开两张相同的牌即可配对成功。据说能锻炼工作记忆——反正比刷短视频健康。</p>
+        <div class="mem-grid" id="memGrid"></div>
+        <div class="game-status">
+          <span>翻牌次数：<b id="memMoves">0</b></span>
+          <button class="mini-btn" id="memRestart">重新开始</button>
+        </div>
+      </div>
+      <div class="card game-card">
+        <h3>🍂 禅意落叶（点点点）</h3>
+        <p>无目标、无输赢、无 KPI。点一下长出一片叶子，就这么简单。这才是放松该有的样子。</p>
+        <div class="zen-stage" id="zenStage">
+          <div class="zen-score" id="zenScore">叶子 × 0</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 背单词 ================= -->
+  <section class="page" id="page-word">
+    <div class="card">
+      <div class="word-topbar">
+        <div class="word-prog"><i id="wordProg" style="width:0%"></i></div>
+        <div class="word-btns-top">
+          <span style="font-size:12px;color:var(--sub)" id="wordPos"></span>
+          <button class="mini-btn" id="btnShuffle">🔀 打乱重来</button>
+          <button class="mini-btn" id="btnClear">🧹 清空进度</button>
+        </div>
+      </div>
+      <div id="wordArea"></div>
+      <div class="word-actions" id="wordActions" style="display:none">
+        <button class="btn btn-no" id="btnNo">😴 想不起来</button>
+        <button class="btn btn-yes" id="btnYes">✅ 想起来了</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>种番茄 · 单文件 HTML · 进度保存在浏览器本地（localStorage）· GitHub Pages 可直接部署</footer>
+</div>
+<div class="toast" id="toast"></div>
+<div class="proof-view" id="proofView">
+  <img id="proofViewImg" src="" alt="学习凭证">
+  <div class="note" id="proofViewNote"></div>
+</div>
+
+<script>
+/* ================================================================
+   种番茄 —— 番茄钟 + 放松小游戏 + 背单词
+   数据全部存 localStorage，无后端，单文件即战力
+================================================================ */
+const $ = s => document.querySelector(s);
+const LS = {
+  get(k, d){ try{ return JSON.parse(localStorage.getItem('ss_'+k)) ?? d }catch(e){ return d } },
+  set(k, v){ localStorage.setItem('ss_'+k, JSON.stringify(v)) }
+};
+const today = () => new Date().toISOString().slice(0,10);
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ---------------- Tab 切换 ---------------- */
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    $('#page-'+b.dataset.tab).classList.add('active');
+  };
+});
+
+/* ================================================================
+   一、番茄钟
+================================================================ */
+const POMO = {
+  mode:'focus',            // focus | short | long
+  total:25*60, left:25*60,
+  running:false, timer:null,
+  cfg:{focus:25, short:5, long:15, auto:false},
+  history: LS.get('history',{})   // {'2026-09-10':{focus:3,min:75,break:2}}
+};
+function loadCfg(){
+  const c = LS.get('cfg', null);
+  if(c) Object.assign(POMO.cfg, c);
+  $('#setFocus').value = POMO.cfg.focus;
+  $('#setShort').value = POMO.cfg.short;
+  $('#setLong').value  = POMO.cfg.long;
+  $('#setAuto').checked = POMO.cfg.auto;
+}
+function saveCfg(){
+  POMO.cfg.focus = clamp( $('#setFocus').value, 1, 120, 25);
+  POMO.cfg.short = clamp( $('#setShort').value, 1, 60, 5);
+  POMO.cfg.long  = clamp( $('#setLong').value, 1, 60, 15);
+  POMO.cfg.auto  = $('#setAuto').checked;
+  LS.set('cfg', POMO.cfg);
+  if(!POMO.running){ setMode(POMO.mode, true); }
+}
+function clamp(v,a,b,d){ v=parseInt(v); return isNaN(v)?d:Math.min(b,Math.max(a,v)); }
+
+const MODE_TEXT = {
+  focus:{label:'专注时间 · 冲！', color:'var(--tomato)', ms:'focus'},
+  short:{label:'小憩一下 ☕',   color:'var(--green)',  ms:'break'},
+  long:{label:'长休充电中 🛋',  color:'var(--green)',  ms:'break'}
+};
+function setMode(m, silent){
+  POMO.mode = m;
+  const min = m==='focus'?POMO.cfg.focus : m==='short'?POMO.cfg.short : POMO.cfg.long;
+  POMO.total = POMO.left = min*60;
+  stopTimer(silent);
+  renderTimer();
+  document.querySelectorAll('.mode-chip').forEach(c=>c.classList.toggle('active', c.dataset.mode===m));
+  $('#ring').style.stroke = MODE_TEXT[m].color;
+  $('#btnStart').classList.toggle('break-mode', m!=='focus');
+}
+function renderTimer(){
+  const m=String(Math.floor(POMO.left/60)).padStart(2,'0');
+  const s=String(POMO.left%60).padStart(2,'0');
+  $('#timeNum').textContent = m+':'+s;
+  $('#timeLbl').textContent = POMO.running ? MODE_TEXT[POMO.mode].label+' 进行中' : MODE_TEXT[POMO.mode].label;
+  document.title = (POMO.running?'⏳ ':'🍅 ')+m+':'+s+' 种番茄';
+  const pct = POMO.left/POMO.total;
+  $('#ring').style.strokeDashoffset = 741.4*(1-pct);
+}
+function startTimer(){
+  if(POMO.running) return;
+  POMO.running = true;
+  $('#btnStart').textContent = '⏸ 暂停';
+  POMO.timer = setInterval(()=>{
+    POMO.left--;
+    if(POMO.left<=0){ finishSession(); return; }
+    renderTimer();
+  },1000);
+  renderTimer();
+}
+function stopTimer(silent){
+  clearInterval(POMO.timer);
+  POMO.running=false;
+  $('#btnStart').textContent = '▶ 开始';
+  if(!silent) renderTimer();
+}
+function finishSession(){
+  stopTimer(true);
+  beep();
+  const d = POMO.history[today()] || {focus:0,min:0,break:0};
+  if(POMO.mode==='focus'){
+    d.focus++; d.min += POMO.cfg.focus;
+    gainCoins(POMO.cfg.focus, '专注奖励');   // 每专注 1 分钟 = 1 番茄币
+    autoNext('short');
+  }else{
+    d.break++;
+    toast('☕ 休息结束，来个新番茄？');
+    autoNext('focus');
+  }
+  POMO.history[today()] = d;
+  LS.set('history', POMO.history);
+  renderStats();
+  renderTimer();
+}
+function autoNext(next){
+  if(POMO.cfg.auto){ setMode(next,true); startTimer(); }
+  else { POMO.left = (next==='focus'?POMO.cfg.focus:next==='short'?POMO.cfg.short:POMO.cfg.long)*60; POMO.total=POMO.left; setMode(next); }
+}
+$('#btnStart').onclick = ()=> POMO.running ? (stopTimer(),toast('已暂停，喘口气没关系')) : startTimer();
+$('#btnReset').onclick = ()=>{ stopTimer(); POMO.left=POMO.total; renderTimer(); };
+$('#btnSkip').onclick  = ()=>{ stopTimer(); toast('跳过本段'); setMode(POMO.mode==='focus'?'short':'focus'); };
+document.querySelectorAll('.mode-chip').forEach(c=> c.onclick = ()=> setMode(c.dataset.mode));
+['setFocus','setShort','setLong','setAuto'].forEach(id=>{
+  $('#'+id).addEventListener('change', saveCfg);
+});
+
+/* 统计 & 打卡 */
+function renderStats(){
+  const d = POMO.history[today()] || {focus:0,min:0,break:0};
+  $('#statFocus').textContent = d.focus;
+  $('#statMin').textContent = d.min;
+  $('#statBreak').textContent = d.break;
+  $('#todayCount').textContent = d.focus;
+  // 连续打卡
+  let streak=0, day=new Date();
+  while(true){
+    const k = day.toISOString().slice(0,10);
+    const h = POMO.history[k];
+    if(h && (h.focus>0 || h.break>0)){ streak++; day.setDate(day.getDate()-1); }
+    else if(k===today()){ day.setDate(day.getDate()-1); } // 今天还没做不打断
+    else break;
+  }
+  $('#streak').textContent = streak;
+  // 最近7天
+  const days=[];
+  for(let i=6;i>=0;i--){
+    const dd=new Date(); dd.setDate(dd.getDate()-i);
+    const k=dd.toISOString().slice(0,10);
+    if(POMO.history[k] && POMO.history[k].focus>0) days.push((dd.getMonth()+1)+'/'+dd.getDate()+'('+POMO.history[k].focus+'🍅)');
+  }
+  $('#historyBox').innerHTML = '最近 7 天：'+(days.length?'<b>'+days.join(' · ')+'</b>':'<b>暂无记录</b>');
+}
+const QUOTES=[
+  '💧 专注就像呼吸，一呼一吸之间，事情就完成了。',
+  '🌊 你不需要一次性搬完一座山，只需要搬眼前这块石头。',
+  '🐢 慢慢来，比较快。',
+  '🔥 种下去的是番茄，长出来的是专注。',
+  '🌱 每个番茄 25 分钟，种下去的都是未来的自己。',
+  '🧹 代码乱没关系，能跑就行——但今天先专心 25 分钟。'
+];
+$('#quoteBox').textContent = QUOTES[new Date().getDate() % QUOTES.length];
+
+/* 提示音（WebAudio，无需文件） */
+function beep(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    [880, 1100].forEach((f,i)=>{
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value=f; o.type='sine';
+      g.gain.setValueAtTime(0.001, ctx.currentTime+i*0.18);
+      g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime+i*0.18+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+i*0.18+0.35);
+      o.start(ctx.currentTime+i*0.18); o.stop(ctx.currentTime+i*0.18+0.4);
+    });
+  }catch(e){}
+}
+
+/* ================================================================
+   二、放松小游戏
+================================================================ */
+/* --- 学习宠物 --- */
+const PET_STAGES=['🥚','🐣','🐥','🐤','🐔'];
+let coins = LS.get('coins',0);
+let pet = LS.get('pet', {name:'小番茄', lv:1, exp:0, hunger:80, mood:80, ts:Date.now(), petTs:0});
+const expNeed = () => 30*pet.lv;
+// 时间流逝：饱食 -3/小时，心情 -2/小时
+(function petDecay(){
+  const hrs = (Date.now()-pet.ts)/3600000;
+  if(hrs>0.1){
+    pet.hunger = Math.max(0, pet.hunger - Math.floor(hrs*3));
+    pet.mood   = Math.max(0, pet.mood   - Math.floor(hrs*2));
+    pet.ts = Date.now();
+  }
+})();
+function savePet(){ pet.ts=Date.now(); LS.set('pet',pet); }
+function gainCoins(n, reason, silent){
+  coins += n; LS.set('coins',coins);
+  renderPet();
+  if(!silent) toast('🪙 +'+n+' 番茄币（'+reason+'）');
+}
+function renderPet(){
+  const emoji = pet.hunger<=15 ? '😵' : PET_STAGES[Math.min(PET_STAGES.length-1, pet.lv-1)];
+  $('#petEmoji').textContent = emoji;
+  $('#petName').textContent = pet.name;
+  $('#petLv').textContent = 'Lv.'+pet.lv+' · 经验 '+pet.exp+'/'+expNeed();
+  $('#petHungerBar').style.width = pet.hunger+'%';
+  $('#petMoodBar').style.width = pet.mood+'%';
+  $('#petHungerT').textContent = pet.hunger;
+  $('#petMoodT').textContent = pet.mood;
+  $('#coinNum').textContent = coins;
+  let msg;
+  if(pet.hunger<=15) msg = '😵 饿得眼冒金星…快用番茄币买粮食！';
+  else if(pet.mood<=15) msg = '🥺 emo 了，喂点零食哄哄它吧。';
+  else if(pet.lv>=5) msg = '🎉 它已经长成大鸡了，全靠你学出来的！';
+  else msg = '状态不错！继续专注攒币，离下一阶段只差一点了。';
+  $('#petMsg').textContent = msg;
+}
+function gainExp(n){
+  pet.exp += n;
+  while(pet.exp >= expNeed() && pet.lv < 5){
+    pet.exp -= expNeed();
+    pet.lv++;
+    toast('✨ '+pet.name+' 升级了！进化 → '+PET_STAGES[pet.lv-1]);
+  }
+  if(pet.lv>=5) pet.exp = Math.min(pet.exp, expNeed());
+  savePet(); renderPet();
+}
+$('#btnFeed').onclick = ()=>{
+  if(coins<5) return toast('🪙 不够 5 币，先去专注一会儿吧！');
+  coins-=5; LS.set('coins',coins);
+  pet.hunger = Math.min(100, pet.hunger+30);
+  toast('🍖 '+pet.name+' 吃得很香，饱食 +30');
+  gainExp(12);
+};
+$('#btnSnack').onclick = ()=>{
+  if(coins<12) return toast('🪙 不够 12 币，零食有点贵，先专注！');
+  coins-=12; LS.set('coins',coins);
+  pet.mood = Math.min(100, pet.mood+30);
+  pet.hunger = Math.min(100, pet.hunger+5);
+  toast('🍬 '+pet.name+' 开心地转了个圈！');
+  gainExp(5);
+};
+$('#btnPet').onclick = ()=>{
+  const now = Date.now();
+  if(now - (pet.petTs||0) < 60000) return toast('它现在不想被摸，等 1 分钟再来…');
+  pet.petTs = now;
+  pet.mood = Math.min(100, pet.mood+2);
+  savePet(); renderPet();
+  toast('🤚 '+pet.name+' 眯起了眼睛，心情 +2');
+};
+
+/* --- 学习凭证（防刷时间） --- */
+let proofs = LS.get('proofs',[]);   // {img:dataURL, note, min, date}
+let proofImg = null;                 // 待提交的压缩图
+const PROOF_DAILY_MAX = 240;
+function proofTodayMin(){
+  return proofs.filter(p=>p.date===today()).reduce((s,p)=>s+p.min,0);
+}
+function compressImg(file, cb){
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const max=420, r=Math.min(1, max/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(img.width*r); cv.height=Math.round(img.height*r);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      cb(cv.toDataURL('image/jpeg',0.7));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function renderProof(){
+  $('#proofToday').textContent = proofTodayMin();
+  const list = $('#proofList');
+  list.innerHTML = '';
+  proofs.slice().reverse().forEach(p=>{
+    const d = document.createElement('div');
+    d.className='proof-item';
+    d.innerHTML = '<img src="'+p.img+'"><div class="m">'+p.min+'min · '+(p.date||'').slice(5)+'</div>';
+    d.onclick = ()=>showProof(p);
+    list.appendChild(d);
+  });
+}
+function showProof(p){
+  $('#proofViewImg').src = p.img;
+  $('#proofViewNote').textContent = (p.date||'')+' · '+p.min+' 分钟 · '+p.note;
+  $('#proofView').classList.add('show');
+}
+$('#proofView').onclick = ()=> $('#proofView').classList.remove('show');
+$('#btnProofPick').onclick = ()=> $('#proofFile').click();
+$('#proofFile').onchange = e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  if(f.size > 10*1024*1024) return toast('图片太大了，换一张吧（<10MB）');
+  compressImg(f, d=>{
+    proofImg = d;
+    const t = $('#proofThumb');
+    t.src = d; t.style.display='block';
+    $('#btnProofPick').textContent = '📷 重新选择';
+  });
+};
+$('#btnProofSubmit').onclick = ()=>{
+  const note = $('#proofNote').value.trim();
+  const min = parseInt($('#proofMin').value);
+  if(!proofImg) return toast('先选择一张学习照片（笔记/教材/屏幕）');
+  if(!note) return toast('写一句学习描述再提交');
+  if(isNaN(min) || min<1) return toast('填一下实际学习分钟数（≥1）');
+  const used = proofTodayMin();
+  if(used + min > PROOF_DAILY_MAX) return toast('今日兑换上限 240 分钟，还剩 '+(PROOF_DAILY_MAX-used)+' 分钟');
+  proofs.push({img:proofImg, note, min, date:today()});
+  if(proofs.length>24) proofs = proofs.slice(-24);   // 控制 localStorage 体积
+  LS.set('proofs', proofs);
+  gainCoins(min, '学习凭证兑换');
+  // 重置表单
+  proofImg=null; $('#proofThumb').style.display='none';
+  $('#proofNote').value=''; $('#proofMin').value='';
+  $('#btnProofPick').textContent='📷 选择照片（必填）';
+  renderProof();
+  renderPet();
+};
+renderPet();
+renderProof();
+
+/* --- 记忆翻牌 --- */
+const EMOJIS=['🍅','☕','🧠','🍂','💧','🐢','🔥','🌊'];
+let memFirst=null, memLock=false, memMoves=0, memPairs=0;
+function initMem(){
+  const cards=[...EMOJIS,...EMOJIS].sort(()=>Math.random()-.5);
+  const grid=$('#memGrid'); grid.innerHTML='';
+  memFirst=null; memLock=false; memMoves=0; memPairs=0;
+  $('#memMoves').textContent=0;
+  cards.forEach(e=>{
+    const c=document.createElement('div');
+    c.className='mem-card'; c.dataset.v=e; c.textContent='❓';
+    c.onclick=()=>flipMem(c);
+    grid.appendChild(c);
+  });
+}
+function flipMem(c){
+  if(memLock || c.classList.contains('open') || c.classList.contains('done')) return;
+  c.classList.add('open'); c.textContent=c.dataset.v;
+  if(!memFirst){ memFirst=c; return; }
+  memMoves++; $('#memMoves').textContent=memMoves;
+  if(memFirst.dataset.v===c.dataset.v){
+    memFirst.classList.add('done'); c.classList.add('done');
+    memFirst.classList.remove('open'); c.classList.remove('open');
+    memFirst=null; memPairs++;
+    if(memPairs===EMOJIS.length) toast('🎉 全部配对！用了 '+memMoves+' 次');
+  }else{
+    memLock=true;
+    const a=memFirst; memFirst=null;
+    setTimeout(()=>{ a.classList.remove('open'); c.classList.remove('open'); a.textContent=c.textContent='❓'; memLock=false; }, 650);
+  }
+}
+$('#memRestart').onclick=initMem;
+initMem();
+
+/* --- 禅意落叶 --- */
+let zenN=LS.get('zen',0);
+$('#zenScore').textContent='叶子 × '+zenN;
+$('#zenStage').onclick=e=>{
+  zenN++; LS.set('zen',zenN);
+  $('#zenScore').textContent='叶子 × '+zenN;
+  const leaf=document.createElement('div');
+  leaf.className='leaf';
+  leaf.textContent=['🍂','🍁','🍃','🌸'][Math.floor(Math.random()*4)];
+  leaf.style.left=(e.offsetX-11)+'px';
+  leaf.style.animationDuration=(2.5+Math.random()*2.5)+'s';
+  $('#zenStage').appendChild(leaf);
+  setTimeout(()=>leaf.remove(),5200);
+};
+
+/* ================================================================
+   三、背单词（不背单词模式：卡片翻转 + 简易间隔重复）
+================================================================ */
+const WORDS=[
+  {w:'abandon', ph:'/əˈbændən/', pos:'v.', m:'放弃；抛弃', ex:'Never <b>abandon</b> your dreams, even when the code is a mess.'},
+  {w:'compile', ph:'/kəmˈpaɪl/', pos:'v.', m:'编译；汇编', ex:'It takes 3 minutes to <b>compile</b> this huge project.'},
+  {w:'refactor', ph:'/ˌriˈfæktər/', pos:'v.', m:'重构（代码）', ex:'We need to <b>refactor</b> this spaghetti code someday.'},
+  {w:'deadline', ph:'/ˈdedlaɪn/', pos:'n.', m:'截止日期', ex:'The <b>deadline</b> is tomorrow, and I am still debugging.'},
+  {w:'focus', ph:'/ˈfoʊkəs/', pos:'n./v.', m:'专注；焦点', ex:'One <b>pomodoro</b> at a time to keep your focus.'},
+  {w:'procrastinate', ph:'/prəˈkræstɪneɪt/', pos:'v.', m:'拖延', ex:'Stop <b>procrastinating</b> and start the first 25 minutes.'},
+  {w:'efficient', ph:'/ɪˈfɪʃnt/', pos:'adj.', m:'高效的', ex:'Short breaks make you more <b>efficient</b>, not lazy.'},
+  {w:'memory', ph:'/ˈmeməri/', pos:'n.', m:'记忆；内存', ex:'Repetition is the mother of <b>memory</b>.'},
+  {w:'review', ph:'/rɪˈvjuː/', pos:'v./n.', m:'复习；评审', ex:'<b>Review</b> the words you got wrong yesterday.'},
+  {w:'vocabulary', ph:'/vəˈkæbjəleri/', pos:'n.', m:'词汇量', ex:'Your <b>vocabulary</b> grows one card at a time.'},
+  {w:'consistent', ph:'/kənˈsɪstənt/', pos:'adj.', m:'坚持的；一致的', ex:'Be <b>consistent</b>: 20 words a day beats 200 once a month.'},
+  {w:'habit', ph:'/ˈhæbɪt/', pos:'n.', m:'习惯', ex:'Studying becomes a <b>habit</b> after 21 days.'},
+  {w:'essential', ph:'/ɪˈsenʃl/', pos:'adj.', m:'必要的；本质的', ex:'Sleep is <b>essential</b> to learning.'},
+  {w:'distract', ph:'/dɪˈstrækt/', pos:'v.', m:'使分心', ex:'Put your phone away—don\'t let it <b>distract</b> you.'},
+  {w:'reward', ph:'/rɪˈwɔːrd/', pos:'n./v.', m:'奖励', ex:'Give yourself a small <b>reward</b> after each pomodoro.'},
+  {w:'persistent', ph:'/pərˈsɪstənt/', pos:'adj.', m:'坚持不懈的', ex:'<b>Persistent</b> effort beats sudden inspiration.'},
+  {w:'ambitious', ph:'/æmˈbɪʃəs/', pos:'adj.', m:'有雄心的', ex:'An <b>ambitious</b> plan starts with a tiny first step.'},
+  {w:'relax', ph:'/rɪˈlæks/', pos:'v.', m:'放松', ex:'<b>Relax</b> your eyes every 25 minutes.'},
+  {w:'achieve', ph:'/əˈtʃiːv/', pos:'v.', m:'实现；达到', ex:'You will <b>achieve</b> more than you expect.'},
+  {w:'overwhelmed', ph:'/ˌoʊvərˈwelmd/', pos:'adj.', m:'不堪重负的', ex:'Feeling <b>overwhelmed</b>? Just do the next small thing.'}
+];
+// progress: {word: {box:0-3(掌握度), wrong:次数}}  box>=2 视为已掌握
+let wProg = LS.get('wprog',{});
+function buildQueue(){
+  // 间隔重复：没掌握的在前，错的多的优先，掌握的排最后
+  const scored = WORDS.map((w,i)=>({i, box:(wProg[w.w]?.box)||0, wrong:(wProg[w.w]?.wrong)||0}));
+  scored.sort((a,b)=> (a.box-b.box) || (b.wrong-a.wrong) || (Math.random()-.5));
+  return scored.filter(s=>s.box<2).map(s=>s.i);
+}
+let queue=[], qi=0, flipped=false;
+function nextWord(){
+  if(qi>=queue.length){
+    renderWordDone();
+    return;
+  }
+  const w = WORDS[queue[qi]];
+  const total = WORDS.length, done = WORDS.filter(x=>(wProg[x.w]?.box||0)>=2).length;
+  $('#wordProg').style.width = (done/total*100).toFixed(1)+'%';
+  $('#wordPos').textContent = '进度 '+done+'/'+total+' 已掌握 · 剩余 '+(queue.length-qi)+' 张';
+  flipped=false;
+  $('#wordArea').innerHTML = `
+    <div class="wcard" id="wcard">
+      <span class="idx">${qi+1} / ${queue.length}</span>
+      <span class="star" id="wStar" title="加入重点">${(wProg[w.w]?.wrong)>0?'⭐':''}</span>
+      <div class="front">
+        <div class="w">${w.w}</div>
+        <div class="ph">${w.ph}</div>
+        <div class="tap">👆 点击卡片查看释义</div>
+      </div>
+      <div class="back">
+        <div class="w2">${w.w}</div>
+        <div><span class="pos">${w.pos}</span></div>
+        <div class="mean">${w.m}</div>
+        <div class="ex">${w.ex}</div>
+      </div>
+    </div>`;
+  $('#wordActions').style.display='flex';
+  $('#wcard').onclick=()=>{ $('#wcard').classList.add('flipped'); flipped=true; };
+}
+function answer(know){
+  if(!flipped){ toast('先点开卡片看看释义再作答哦'); return; }
+  const w = WORDS[queue[qi]];
+  const p = wProg[w.w] || {box:0,wrong:0};
+  if(know){ p.box = Math.min(3, p.box+1); }
+  else{ p.box = 0; p.wrong++; }
+  wProg[w.w] = p;
+  LS.set('wprog', wProg);
+  qi++;
+  nextWord();
+}
+function renderWordDone(){
+  $('#wordArea').innerHTML = `<div class="word-empty"><div class="big">🎉</div>这一轮的词都过完了！<br>点「打乱重来」开始下一轮，或去番茄钟专注一会儿。</div>`;
+  $('#wordActions').style.display='none';
+  $('#wordPos').textContent = '本轮完成 ✅';
+}
+$('#btnYes').onclick = ()=>answer(true);
+$('#btnNo').onclick  = ()=>answer(false);
+$('#btnShuffle').onclick = ()=>{ queue=buildQueue(); qi=0; nextWord(); };
+$('#btnClear').onclick = ()=>{
+  if(confirm('确定清空所有单词学习进度吗？')){ wProg={}; LS.set('wprog',{}); queue=buildQueue(); qi=0; nextWord(); toast('已清空'); }
+};
+queue = buildQueue(); nextWord();
+
+/* ---------------- 初始化 ---------------- */
+loadCfg();
+setMode('focus', true);
+renderStats();
+// 防止改时间设置时显示错乱
+window.addEventListener('beforeunload', ()=> stopTimer(true));
+</script>
+</body>
+</html>
